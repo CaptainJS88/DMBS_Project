@@ -12,8 +12,6 @@ VALUES (
     2001,
     TIMESTAMP '2026-04-01 13:00:00',
     TIMESTAMP '2026-04-01 15:00:00',
-    2.00,
-    20.00,
     'COMPLETED'
 );
 
@@ -26,8 +24,6 @@ VALUES (
     2007,
     TIMESTAMP '2026-04-02 17:00:00',
     TIMESTAMP '2026-04-02 19:00:00',
-    2.00,
-    100.00,
     'COMPLETED'
 );
 
@@ -36,9 +32,7 @@ VALUES (
     1007,
     DATE '2026-04-03',
     '742 Liberty Ave',
-    'Arlington',
-    '76011',
-    'TX'
+    '76011'
 );
 
 UPDATE Spring26_S008_T7_Customer

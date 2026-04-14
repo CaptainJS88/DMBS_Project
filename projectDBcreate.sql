@@ -48,16 +48,22 @@ CREATE TABLE Spring26_S008_T7_CustPhone (
         ON DELETE CASCADE
 );
 
+CREATE TABLE Spring26_S008_T7_ZipCode (
+    zip_code VARCHAR2(10) PRIMARY KEY,
+    city VARCHAR2(50) NOT NULL,
+    state_code VARCHAR2(2) NOT NULL
+);
+
 CREATE TABLE Spring26_S008_T7_Member (
     customer_id NUMBER PRIMARY KEY,
     join_date DATE NOT NULL,
     street VARCHAR2(100) NOT NULL,
-    city VARCHAR2(50) NOT NULL,
     zip_code VARCHAR2(10) NOT NULL,
-    state_code VARCHAR2(2) NOT NULL,
     FOREIGN KEY (customer_id)
         REFERENCES Spring26_S008_T7_Customer(customer_id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+    FOREIGN KEY (zip_code)
+        REFERENCES Spring26_S008_T7_ZipCode(zip_code)
 );
 
 CREATE TABLE Spring26_S008_T7_EmpPhone (
@@ -82,8 +88,6 @@ CREATE TABLE Spring26_S008_T7_EmpEmail (
 CREATE TABLE Spring26_S008_T7_ShiftSlot (
     shift_id NUMBER PRIMARY KEY,
     employee_id NUMBER NOT NULL,
-    shift_name VARCHAR2(10) NOT NULL
-        CHECK (shift_name IN ('MORNING', 'AFTERNOON', 'EVENING', 'NIGHT')),
     shift_start TIMESTAMP NOT NULL,
     shift_end TIMESTAMP NOT NULL,
     CHECK (shift_end > shift_start),
@@ -123,8 +127,6 @@ CREATE TABLE Spring26_S008_T7_Booking (
     employee_id NUMBER NOT NULL,
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP NOT NULL,
-    actual_duration_hours NUMBER(5,2) NOT NULL CHECK (actual_duration_hours > 0),
-    booking_cost NUMBER(8,2) NOT NULL CHECK (booking_cost > 0),
     booking_status VARCHAR2(10) DEFAULT 'COMPLETED' NOT NULL
         CHECK (booking_status IN ('ACTIVE', 'COMPLETED', 'CANCELLED')),
     CHECK (end_time > start_time),

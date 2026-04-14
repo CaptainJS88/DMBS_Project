@@ -7,14 +7,14 @@ PROMPT Query 1
 SELECT
     g.game_name,
     g.genre,
-    ROUND(SUM(b.actual_duration_hours), 2) AS total_player_hours,
+    ROUND(SUM((CAST(b.end_time AS DATE) - CAST(b.start_time AS DATE)) * 24), 2) AS total_player_hours,
     COUNT(b.booking_id) AS total_sessions
 FROM Spring26_S008_T7_Game g
 JOIN Spring26_S008_T7_Booking b
     ON b.game_id = g.game_id
 WHERE b.booking_status <> 'CANCELLED'
 GROUP BY g.game_name, g.genre
-HAVING SUM(b.actual_duration_hours) >= 3
+HAVING SUM((CAST(b.end_time AS DATE) - CAST(b.start_time AS DATE)) * 24) >= 3
 ORDER BY total_player_hours DESC, total_sessions DESC;
 
 -- Expected output before update:
@@ -51,10 +51,15 @@ SELECT
     c.customer_name,
     c.membership_status,
     COUNT(b.booking_id) AS booking_count,
-    ROUND(SUM(b.booking_cost), 2) AS total_spent
+    ROUND(
+        SUM(s.hourly_rate * ((CAST(b.end_time AS DATE) - CAST(b.start_time AS DATE)) * 24)),
+        2
+    ) AS total_spent
 FROM Spring26_S008_T7_Customer c
 JOIN Spring26_S008_T7_Booking b
     ON b.customer_id = c.customer_id
+JOIN Spring26_S008_T7_Station s
+    ON s.station_id = b.station_id
 WHERE b.start_time >= TIMESTAMP '2026-03-03 00:00:00'
 GROUP BY c.customer_id, c.customer_name, c.membership_status
 HAVING COUNT(b.booking_id) >= 1
@@ -79,7 +84,12 @@ PROMPT Query 3
 SELECT
     s.station_type_code,
     s.station_label,
-    ROUND(SUM(NVL(b.actual_duration_hours, 0)), 2) AS booked_hours,
+    ROUND(
+        SUM(
+            NVL((CAST(b.end_time AS DATE) - CAST(b.start_time AS DATE)) * 24, 0)
+        ),
+        2
+    ) AS booked_hours,
     COUNT(b.booking_id) AS booking_count
 FROM Spring26_S008_T7_Station s
 LEFT JOIN Spring26_S008_T7_Booking b
@@ -189,7 +199,12 @@ PROMPT Query 4
 -- English description: Calculate average labor cost per booking by day of week and shift using ROLLUP.
 SELECT
     TO_CHAR(ss.shift_start, 'DY') AS shift_day,
-    ss.shift_name,
+    CASE
+        WHEN EXTRACT(HOUR FROM ss.shift_start) BETWEEN 6 AND 11 THEN 'MORNING'
+        WHEN EXTRACT(HOUR FROM ss.shift_start) BETWEEN 12 AND 15 THEN 'AFTERNOON'
+        WHEN EXTRACT(HOUR FROM ss.shift_start) BETWEEN 16 AND 19 THEN 'EVENING'
+        ELSE 'NIGHT'
+    END AS shift_name,
     ROUND(
         SUM(
             e.hourly_rate * ((CAST(ss.shift_end AS DATE) - CAST(ss.shift_start AS DATE)) * 24)
@@ -203,8 +218,16 @@ LEFT JOIN Spring26_S008_T7_Booking b
     ON b.employee_id = ss.employee_id
    AND b.start_time >= ss.shift_start
    AND b.end_time <= ss.shift_end
-GROUP BY ROLLUP (TO_CHAR(ss.shift_start, 'DY'), ss.shift_name)
-ORDER BY shift_day, ss.shift_name;
+GROUP BY ROLLUP (
+    TO_CHAR(ss.shift_start, 'DY'),
+    CASE
+        WHEN EXTRACT(HOUR FROM ss.shift_start) BETWEEN 6 AND 11 THEN 'MORNING'
+        WHEN EXTRACT(HOUR FROM ss.shift_start) BETWEEN 12 AND 15 THEN 'AFTERNOON'
+        WHEN EXTRACT(HOUR FROM ss.shift_start) BETWEEN 16 AND 19 THEN 'EVENING'
+        ELSE 'NIGHT'
+    END
+)
+ORDER BY shift_day, shift_name;
 
 -- Expected output before update:
 -- FRI | AFTERNOON | 166.4
