@@ -124,7 +124,6 @@ CREATE TABLE Spring26_S008_T7_Booking (
     customer_id NUMBER NOT NULL,
     station_id NUMBER NOT NULL,
     game_id NUMBER NOT NULL,
-    employee_id NUMBER NOT NULL,
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP NOT NULL,
     booking_status VARCHAR2(10) DEFAULT 'COMPLETED' NOT NULL
@@ -135,9 +134,19 @@ CREATE TABLE Spring26_S008_T7_Booking (
     FOREIGN KEY (station_id)
         REFERENCES Spring26_S008_T7_Station(station_id),
     FOREIGN KEY (game_id)
-        REFERENCES Spring26_S008_T7_Game(game_id),
+        REFERENCES Spring26_S008_T7_Game(game_id)
+);
+
+CREATE TABLE Spring26_S008_T7_Manages (
+    booking_id NUMBER NOT NULL,
+    employee_id NUMBER NOT NULL,
+    PRIMARY KEY (booking_id, employee_id),
+    FOREIGN KEY (booking_id)
+        REFERENCES Spring26_S008_T7_Booking(booking_id)
+        ON DELETE CASCADE,
     FOREIGN KEY (employee_id)
         REFERENCES Spring26_S008_T7_Employee(employee_id)
+        ON DELETE CASCADE
 );
 
 CREATE OR REPLACE TRIGGER S26S008T7_member_chk

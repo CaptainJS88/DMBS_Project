@@ -196,7 +196,7 @@ ORDER BY s.station_type_code, s.station_label;
 -- null | null | 102 | 59
 
 PROMPT Query 4
--- English description: Calculate average labor cost per booking by day of week and shift using ROLLUP.
+-- English description: Calculate average labor cost per managed booking by day of week and shift using ROLLUP.
 SELECT
     TO_CHAR(ss.shift_start, 'DY') AS shift_day,
     CASE
@@ -207,15 +207,20 @@ SELECT
     END AS shift_name,
     ROUND(
         SUM(
-            e.hourly_rate * ((CAST(ss.shift_end AS DATE) - CAST(ss.shift_start AS DATE)) * 24)
+            CASE
+                WHEN b.booking_id IS NOT NULL THEN
+                    e.hourly_rate * ((CAST(ss.shift_end AS DATE) - CAST(ss.shift_start AS DATE)) * 24)
+            END
         ) / NULLIF(COUNT(DISTINCT b.booking_id), 0),
         2
     ) AS avg_labor_cost_per_booking
 FROM Spring26_S008_T7_ShiftSlot ss
 JOIN Spring26_S008_T7_Employee e
     ON e.employee_id = ss.employee_id
+LEFT JOIN Spring26_S008_T7_Manages m
+    ON m.employee_id = ss.employee_id
 LEFT JOIN Spring26_S008_T7_Booking b
-    ON b.employee_id = ss.employee_id
+    ON b.booking_id = m.booking_id
    AND b.start_time >= ss.shift_start
    AND b.end_time <= ss.shift_end
 GROUP BY ROLLUP (
@@ -346,3 +351,40 @@ ORDER BY g.game_name, gs.station_type_code;
 -- Battle Arena Origins | MOBA | PC
 -- Expected output after update:
 -- no rows selected
+
+PROMPT Query 7
+-- English description: Show employees who manage at least 3 bookings using the Manages M:N relationship.
+SELECT
+    e.employee_id,
+    e.employee_name,
+    COUNT(m.booking_id) AS managed_bookings
+FROM Spring26_S008_T7_Employee e
+JOIN Spring26_S008_T7_Manages m
+    ON m.employee_id = e.employee_id
+JOIN Spring26_S008_T7_Booking b
+    ON b.booking_id = m.booking_id
+WHERE b.booking_status <> 'CANCELLED'
+GROUP BY e.employee_id, e.employee_name
+HAVING COUNT(m.booking_id) >= 3
+ORDER BY managed_bookings DESC, e.employee_id;
+
+-- Expected output before update:
+-- 2002 | Sam Carter | 6
+-- 2001 | Riley Morgan | 5
+-- 2007 | Emma Scott | 5
+-- 2003 | Olivia Reed | 4
+-- 2005 | Nina Shah | 4
+-- 2006 | Dylan Price | 4
+-- 2009 | Harvey Mills | 3
+-- 2010 | Jade Nguyen | 3
+-- 2015 | Eli Patterson | 3
+-- Expected output after update:
+-- 2001 | Riley Morgan | 6
+-- 2007 | Emma Scott | 6
+-- 2002 | Sam Carter | 5
+-- 2003 | Olivia Reed | 4
+-- 2005 | Nina Shah | 4
+-- 2006 | Dylan Price | 4
+-- 2009 | Harvey Mills | 3
+-- 2010 | Jade Nguyen | 3
+-- 2015 | Eli Patterson | 3
